@@ -20,61 +20,60 @@ model Product {
 }
 
 model Sale {
-  id          String   @id @default(cuid())
-  total       Float
+  id        String   @id @default(cuid())
+  total     Float
+  type      String   // "CASH" | "CREDIT"
+  createdAt DateTime @default(now())
 
-  createdAt   DateTime @default(now())
-
-  items       SaleItem[]
+  items     SaleItem[]
 }
 
 model SaleItem {
-  id          String   @id @default(cuid())
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Float
 
-  quantity    Int
-  price       Float
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id])
 
-  saleId      String
-  sale        Sale @relation(fields:[saleId], references:[id])
-
-  productId   String
-  product     Product @relation(fields:[productId], references:[id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
 }
 
-model Customer {
-  id          String   @id @default(cuid())
+// model Customer {
+//   id          String   @id @default(cuid())
 
-  name        String
-  phone       String?
+//   name        String
+//   phone       String?
 
-  balance     Float @default(0)
+//   balance     Float @default(0)
 
-  createdAt   DateTime @default(now())
+//   createdAt   DateTime @default(now())
 
-  credits     CreditTransaction[]
-}
+//   credits     CreditTransaction[]
+// }
 
-model CreditTransaction {
-  id          String   @id @default(cuid())
+// model CreditTransaction {
+//   id          String   @id @default(cuid())
 
-  amount      Float
-  type        CreditType
+//   amount      Float
+//   type        CreditType
 
-  customerId  String
-  customer    Customer @relation(fields:[customerId], references:[id])
+//   customerId  String
+//   customer    Customer @relation(fields:[customerId], references:[id])
 
-  createdAt   DateTime @default(now())
-}
+//   createdAt   DateTime @default(now())
+// }
 
-enum CreditType {
-  DEBT
-  PAYMENT
-}
+// enum CreditType {
+//   DEBT
+//   PAYMENT
+// }
 
-model CashUp {
-  id          String   @id @default(cuid())
+// model CashUp {
+//   id          String   @id @default(cuid())
 
-  totalSales  Float
+//   totalSales  Float
 
-  createdAt   DateTime @default(now())
-}
+//   createdAt   DateTime @default(now())
+// }
