@@ -108,7 +108,7 @@ export default async function DashboardPage() {
 
           <CardContent>
             <h2 className="text-3xl font-bold">
-              M{data.creditOwed}
+              M{data.creditSales}
             </h2>
 
             <p className="text-xs text-gray-500">
