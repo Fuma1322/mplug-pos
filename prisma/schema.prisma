@@ -40,40 +40,51 @@ model SaleItem {
   product   Product  @relation(fields: [productId], references: [id])
 }
 
-// model Customer {
-//   id          String   @id @default(cuid())
+model Customer {
+  id          String   @id @default(cuid())
 
-//   name        String
-//   phone       String?
+  name        String
+  phone       String?
 
-//   balance     Float @default(0)
+  balance     Float @default(0)
 
-//   createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-//   credits     CreditTransaction[]
-// }
+  credits     Credit[]
+}
 
-// model CreditTransaction {
-//   id          String   @id @default(cuid())
+model Credit {
+  id          String   @id @default(cuid())
+  amount      Float
+  type        String   // DEBT | PAYMENT
+  note        String?
 
-//   amount      Float
-//   type        CreditType
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
 
-//   customerId  String
-//   customer    Customer @relation(fields:[customerId], references:[id])
+  saleId      String?
 
-//   createdAt   DateTime @default(now())
-// }
+  createdAt   DateTime @default(now())
+}
 
 // enum CreditType {
 //   DEBT
 //   PAYMENT
 // }
 
-// model CashUp {
-//   id          String   @id @default(cuid())
+model CashSession {
+  id            String   @id @default(cuid())
 
-//   totalSales  Float
+  date          DateTime @default(now())
 
-//   createdAt   DateTime @default(now())
-// }
+  cashSales     Float    @default(0)
+  creditSales   Float    @default(0)
+  totalSales    Float    @default(0)
+
+  expectedCash  Float    @default(0)
+  actualCash    Float
+
+  difference    Float
+
+  createdAt     DateTime @default(now())
+}

@@ -110,7 +110,7 @@ export default function DashboardLayout({
         <div className="absolute bottom-0 w-72 border-t border-[#25D366]/10 p-4">
           <div className="rounded-xl bg-[#25D366]/10 p-3">
             <p className="font-semibold text-[#111111]">
-              Maseru POS
+              MPlug POS
             </p>
 
             <p className="text-xs text-gray-500 mt-1">
