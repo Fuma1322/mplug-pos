@@ -98,11 +98,11 @@ export default function InventoryClient({
                   </CardTitle>
 
                   {lowStock ? (
-                    <Badge className="bg-red-50 text-red-600 border border-red-100">
+                    <Badge className="bg-red-50 text-red-600 rounded-full border border-red-100">
                       Low Stock
                     </Badge>
                   ) : (
-                    <Badge className="bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20">
+                    <Badge className="bg-[#25D366]/10 text-[#25D366] rounded-full border border-[#25D366]/20">
                       Healthy
                     </Badge>
                   )}
@@ -120,21 +120,21 @@ export default function InventoryClient({
 
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-xs text-gray-400">Price</p>
+                    <p className="text-sm font-medium text-gray-400">Price</p>
                     <p className="text-xl font-bold text-[#25D366]">
                       M{product.price}
                     </p>
                   </div>
 
                   <div className="text-right">
-                    <p className="text-xs text-gray-400">Stock</p>
+                    <p className="text-sm font-medium text-gray-400">Stock</p>
                     <p className="text-xl font-bold text-[#111111]">
                       {product.stock}
                     </p>
                   </div>
                 </div>
 
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-gray-100 rounded-2xl overflow-hidden">
                   <div
                     className={`h-full transition-all duration-500 ${
                       lowStock ? "bg-red-500" : "bg-[#25D366]"
