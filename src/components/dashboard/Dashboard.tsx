@@ -10,10 +10,10 @@ import {
   ShoppingCart,
   AlertTriangle,
   CreditCard,
-  ArrowUpRight,
 } from "lucide-react";
 
 import { getDashboardData } from "@/actions/dashboard";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -128,28 +128,34 @@ export default async function DashboardPage() {
 
           <Card className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border-[#25D366]/20">
             <CardContent className="p-6">
-              <h3 className="font-semibold">New Sale</h3>
-              <p className="text-sm text-gray-500 mt-2">
-                Create and process a sale.
-              </p>
+              <Link href="/dashboard/sales" className="block">
+                <h3 className="font-semibold">New Sale</h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  Create and process a sale.
+                </p>
+              </Link>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all">
             <CardContent className="p-6">
-              <h3 className="font-semibold">Inventory</h3>
-              <p className="text-sm text-gray-500 mt-2">
-                Add and manage stock.
-              </p>
+              <Link href="/dashboard/inventory" className="block">
+                <h3 className="font-semibold">Inventory</h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  Add and manage stock.
+                </p>
+              </Link>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all">
             <CardContent className="p-6">
-              <h3 className="font-semibold">Cash Up</h3>
-              <p className="text-sm text-gray-500 mt-2">
-                Close and reconcile sales.
-              </p>
+              <Link href="/dashboard/cash-up" className="block">
+                <h3 className="font-semibold">Cash Up</h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  Close and reconcile sales.
+                </p>
+              </Link>
             </CardContent>
           </Card>
         </div>

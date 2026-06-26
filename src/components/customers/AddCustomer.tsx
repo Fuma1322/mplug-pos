@@ -41,7 +41,7 @@ export default function AddCustomer() {
             Add New Customer
           </h2>
           <p className="text-sm text-gray-500">
-            Register a customer into MaseruPlug POS
+            Register a customer into MPlug POS
           </p>
         </div>
 
