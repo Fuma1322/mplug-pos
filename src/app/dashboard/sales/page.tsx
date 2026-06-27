@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
@@ -6,11 +6,15 @@ import { checkoutSale } from "@/actions/sales";
 import type { Product } from "@/types/products";
 import { Button } from "@/components/ui/button";
 import CreditCheckoutModal from "@/components/sales/CreditCheckoutModal";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function SalesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cashOpen, setCashOpen] = useState(false);
+  const [cashReceived, setCashReceived] = useState("");
 
   const [creditOpen, setCreditOpen] = useState(false);
 
@@ -28,33 +32,34 @@ export default function SalesPage() {
     );
   }, [products, search]);
 
+  const change = useMemo(() => {
+  const received = Number(cashReceived || 0);
+  return received - cart.total();
+}, [cashReceived, cart.items]);
+
   const cartCount = useMemo(() => {
     return cart.items.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart.items]);
 
-  async function checkout(type: "CASH" | "CREDIT") {
-    try {
-      setLoading(true);
+    async function checkout(type: "CASH" | "CREDIT") {
+      try {
+        setLoading(true);
 
-      if (type === "CASH") {
-        await checkoutSale(cart.items, type);
-        cart.clearCart();
+        if (type === "CREDIT") {
+          setCreditOpen(true);
+          return;
+        }
+
+        if (type === "CASH") {
+          setCashOpen(true);
+          return;
+        }
+      } catch (error) {
+        toast.error("Checkout failed");
+      } finally {
+        setLoading(false);
       }
-
-      if (type === "CREDIT") {
-        setCreditOpen(true);
-        return;
-      }
-
-      alert("Sale completed successfully");
-    } catch (error) {
-      console.error(error);
-      alert("Checkout failed");
-    } finally {
-      setLoading(false);
     }
-  }
-
   return (
     <div className="grid grid-cols-12 gap-4 p-6 h-screen bg-gray-50">
 
@@ -149,6 +154,68 @@ export default function SalesPage() {
         total={cart.total()}
         onSuccess={() => cart.clearCart()}
       />
+
+      <Dialog open={cashOpen} onOpenChange={setCashOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white p-6">
+
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              Cash Payment
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-3">
+
+            <div className="p-3 rounded-lg bg-gray-50 border">
+              <p className="text-sm text-gray-500">Total</p>
+              <p className="text-xl font-bold">M{cart.total()}</p>
+            </div>
+
+            <input
+              value={cashReceived}
+              onChange={(e) => setCashReceived(e.target.value)}
+              placeholder="Money received (M)"
+              type="number"
+              className="w-full h-11 px-3 rounded-lg border focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
+            />
+
+            {cashReceived && (
+              <div className="p-3 rounded-lg border bg-white">
+                <p className="text-sm text-gray-500">Change</p>
+                <p
+                  className={`text-xl font-bold ${
+                    change >= 0 ? "text-[#25D366]" : "text-red-500"
+                  }`}
+                >
+                  M{change.toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            <button
+              disabled={change < 0}
+              onClick={async () => {
+                try {
+                  await checkoutSale(cart.items, "CASH");
+
+                  cart.clearCart();
+                  setCashOpen(false);
+                  setCashReceived("");
+
+                  toast.success("Sale completed successfully");
+                } catch (err) {
+                  toast.error("Failed to complete sale");
+                }
+              }}
+              className="w-full bg-[#25D366] text-white p-3 rounded-lg font-semibold disabled:opacity-50"
+            >
+              Complete Sale
+            </button>
+
+          </div>
+
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
