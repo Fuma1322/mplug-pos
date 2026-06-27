@@ -8,36 +8,44 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  price       Float
-  stock       Int
-  minStock    Int @default(5)
+  id         String   @id @default(cuid())
+  name       String
+  price      Float
+  stock      Int
+  minStock   Int      @default(5)
 
-  createdAt   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  saleItems   SaleItem[]
+  saleItems  SaleItem[]
 }
 
 model Sale {
-  id        String   @id @default(cuid())
-  total     Float
-  type      String   // "CASH" | "CREDIT"
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
 
-  items     SaleItem[]
+  total       Float
+  type        String      // CASH | CREDIT
+
+  customerId  String?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  items        SaleItem[]
+  credits      Credit[]
 }
 
 model SaleItem {
-  id        String   @id @default(cuid())
-  quantity  Int
-  price     Float
+  id          String   @id @default(cuid())
 
-  saleId    String
-  sale      Sale     @relation(fields: [saleId], references: [id])
+  quantity    Int
+  price       Float
 
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
+  saleId      String
+  sale        Sale @relation(fields: [saleId], references: [id])
+
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
 }
 
 model Customer {
@@ -49,39 +57,40 @@ model Customer {
   balance     Float @default(0)
 
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   credits     Credit[]
+  sales       Sale[]
 }
 
 model Credit {
   id          String   @id @default(cuid())
+
   amount      Float
-  type        String   // DEBT | PAYMENT
+
+  type        String      // DEBT | PAYMENT
+
   note        String?
 
   customerId  String
   customer    Customer @relation(fields: [customerId], references: [id])
 
   saleId      String?
+  sale        Sale? @relation(fields: [saleId], references: [id])
 
   createdAt   DateTime @default(now())
 }
-
-// enum CreditType {
-//   DEBT
-//   PAYMENT
-// }
 
 model CashSession {
   id            String   @id @default(cuid())
 
   date          DateTime @default(now())
 
-  cashSales     Float    @default(0)
-  creditSales   Float    @default(0)
-  totalSales    Float    @default(0)
+  cashSales     Float @default(0)
+  creditSales   Float @default(0)
+  totalSales    Float @default(0)
 
-  expectedCash  Float    @default(0)
+  expectedCash  Float @default(0)
   actualCash    Float
 
   difference    Float

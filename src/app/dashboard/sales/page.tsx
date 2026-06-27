@@ -1,26 +1,27 @@
-"use client"
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { checkoutSale } from "@/actions/sales";
 import type { Product } from "@/types/products";
 import { Button } from "@/components/ui/button";
+import CreditCheckoutModal from "@/components/sales/CreditCheckoutModal";
 
 export default function SalesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [creditOpen, setCreditOpen] = useState(false);
+
   const cart = useCart();
 
-  // Load products
   useEffect(() => {
     fetch("/api/products/list")
       .then((res) => res.json())
       .then(setProducts);
   }, []);
 
-  // Filter products
   const filteredProducts = useMemo(() => {
     return products.filter((p) =>
       p.name.toLowerCase().includes(search.toLowerCase())
@@ -35,9 +36,16 @@ export default function SalesPage() {
     try {
       setLoading(true);
 
-      await checkoutSale(cart.items, type);
+      if (type === "CASH") {
+        await checkoutSale(cart.items, type);
+        cart.clearCart();
+      }
 
-      cart.clearCart();
+      if (type === "CREDIT") {
+        setCreditOpen(true);
+        return;
+      }
+
       alert("Sale completed successfully");
     } catch (error) {
       console.error(error);
@@ -53,7 +61,6 @@ export default function SalesPage() {
       {/* PRODUCTS */}
       <div className="col-span-8 flex flex-col">
 
-        {/* HEADER / SEARCH */}
         <div className="mb-4">
           <h1 className="text-xl font-bold text-[#111111]">
             Point of Sale
@@ -71,137 +78,77 @@ export default function SalesPage() {
           />
         </div>
 
-        {/* PRODUCT GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5 py-2 overflow-auto pr-1">
-
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-5 overflow-auto">
           {filteredProducts.map((p) => (
             <Button
               key={p.id}
               onClick={() => cart.addItem(p)}
               disabled={p.stock <= 0}
-              className={`h-full w-full flex flex-col items-start justify-between text-left rounded-xl border bg-white p-4 transition-all
-                hover:shadow-lg hover:-translate-y-0.5
-                active:scale-[0.98]
-                ${
-                  p.stock <= 0
-                    ? "opacity-40 cursor-not-allowed"
-                    : "hover:border-[#25D366]"
-                }`}
+              className="h-full flex flex-col items-start bg-white p-4 rounded-xl border hover:border-[#25D366]"
             >
-              <div className="w-full space-y-1">
-                <p className="font-semibold text-[#111111] line-clamp-1">
-                  {p.name}
-                </p>
-
-                <p className="text-sm font-medium text-[#25D366]">
-                  M{p.price}
-                </p>
-
-                <p
-                  className={`text-xs font-medium mt-2 ${
-                    p.stock <= 5 ? "text-red-500" : "text-gray-500"
-                  }`}
-                >
-                  Stock: {p.stock}
-                </p>
-                </div>
+              <p className="font-semibold">{p.name}</p>
+              <p className="text-[#25D366]">M{p.price}</p>
+              <p className="text-xs text-gray-500">Stock: {p.stock}</p>
             </Button>
           ))}
-
         </div>
       </div>
 
       {/* CART */}
-       <div className="col-span-4 flex flex-col border border-[#111111]/20 rounded-xl bg-white h-full overflow-hidden shadow-sm">
+      <div className="col-span-4 flex flex-col bg-white border rounded-xl">
 
-        {/* HEADER */}
-        <div className="p-4 border-b border-[#111111]/10">
-          <h2 className="font-bold text-lg text-[#111111]">
-            Cart ({cartCount})
-          </h2>
+        <div className="p-4 border-b">
+          <h2 className="font-bold">Cart ({cartCount})</h2>
         </div>
 
-        {/* ITEMS (SCROLLABLE) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {cart.items.length === 0 && (
-            <p className="text-gray-400 text-sm">
-              Cart is empty
-            </p>
-          )}
-
           {cart.items.map((item) => (
-            <div
-              key={item.id}
-              className="border border-[#111111]/10 rounded-lg p-3"
-            >
+            <div key={item.id} className="border p-3 rounded-lg">
               <div className="flex justify-between">
-                <p className="font-medium text-[#111111]">
-                  {item.name}
-                </p>
-
-                <button
-                  onClick={() => cart.removeItem(item.id)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  ✕
-                </button>
+                <p>{item.name}</p>
+                <button onClick={() => cart.removeItem(item.id)}>✕</button>
               </div>
 
-              <div className="flex items-center justify-between mt-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => cart.decreaseQty(item.id)}
-                    className="px-2 border rounded hover:border-[#25D366]"
-                  >
-                    -
-                  </button>
-
-                  <p>{item.quantity}</p>
-
-                  <button
-                    onClick={() => cart.increaseQty(item.id)}
-                    className="px-2 border rounded hover:border-[#25D366]"
-                  >
-                    +
-                  </button>
+              <div className="flex justify-between mt-2">
+                <div className="flex gap-2">
+                  <button onClick={() => cart.decreaseQty(item.id)}>-</button>
+                  <span>{item.quantity}</span>
+                  <button onClick={() => cart.increaseQty(item.id)}>+</button>
                 </div>
 
-                <p className="font-semibold text-[#111111]">
-                  M{item.price * item.quantity}
-                </p>
+                <p>M{item.price * item.quantity}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* CHECKOUT (FIXED AT BOTTOM) */}
-        <div className="border-t border-[#111111]/10 p-4 space-y-3 bg-white">
+        <div className="p-4 border-t space-y-3">
+          <p className="font-bold">Total: M{cart.total()}</p>
 
-          <p className="font-bold text-lg text-[#111111]">
-            Total: M{cart.total()}
-          </p>
+          <button
+            onClick={() => checkout("CASH")}
+            className="w-full bg-[#25D366] text-white p-3 rounded-lg"
+          >
+            CASH
+          </button>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => checkout("CASH")}
-              disabled={cart.items.length === 0}
-              className="bg-[#25D366] hover:bg-[#1ebe5d] cursor-pointer text-white w-full p-3 rounded-lg font-semibold disabled:opacity-50"
-            >
-              CASH
-            </button>
-
-            <button
-              onClick={() => checkout("CREDIT")}
-              disabled={cart.items.length === 0}
-              className="bg-[#111111] hover:opacity-90 cursor-pointer text-white w-full p-3 rounded-lg font-semibold disabled:opacity-50"
-            >
-              CREDIT
-            </button>
-          </div>
-
+          <button
+            onClick={() => checkout("CREDIT")}
+            className="w-full bg-black text-white p-3 rounded-lg"
+          >
+            CREDIT
+          </button>
         </div>
       </div>
 
+      {/* CREDIT MODAL */}
+      <CreditCheckoutModal
+        open={creditOpen}
+        onOpenChange={setCreditOpen}
+        cartItems={cart.items}
+        total={cart.total()}
+        onSuccess={() => cart.clearCart()}
+      />
     </div>
   );
 }
