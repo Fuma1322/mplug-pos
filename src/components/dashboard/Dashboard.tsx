@@ -150,7 +150,7 @@ export default async function DashboardPage() {
 
           <Card className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all">
             <CardContent className="p-6">
-              <Link href="/dashboard/cash-up" className="block">
+              <Link href="/dashboard/cashup" className="block">
                 <h3 className="font-semibold">Cash Up</h3>
                 <p className="text-sm text-gray-500 mt-2">
                   Close and reconcile sales.

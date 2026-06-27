@@ -2,51 +2,59 @@
 
 import { prisma } from "@/lib/db";
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-};
-
 export async function checkoutSale(
-  items: CartItem[],
+  items: { id: string; name: string; price: number; quantity: number }[],
   type: "CASH" | "CREDIT"
 ) {
-  if (!items || items.length === 0) {
-    throw new Error("Cart is empty");
-  }
+  return await prisma.$transaction(async (tx) => {
+    if (!items.length) throw new Error("Cart is empty");
 
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+    let total = 0;
 
-  const sale = await prisma.sale.create({
-    data: {
-      total,
-      type,
-      items: {
-        create: items.map((item) => ({
-          quantity: item.quantity,
-          price: item.price,
-          productId: item.id,
-        })),
-      },
-    },
-  });
+    // 1. Validate stock first
+    for (const item of items) {
+      const product = await tx.product.findUnique({
+        where: { id: item.id },
+      });
 
-  // 🔻 Reduce stock AFTER sale is created
-  for (const item of items) {
-    await prisma.product.update({
-      where: { id: item.id },
+      if (!product) throw new Error("Product not found");
+
+      if (product.stock < item.quantity) {
+        throw new Error(`${product.name} out of stock`);
+      }
+
+      total += item.price * item.quantity;
+    }
+
+    // 2. Create sale
+    const sale = await tx.sale.create({
       data: {
-        stock: {
-          decrement: item.quantity,
-        },
+        total,
+        type,
       },
     });
-  }
 
-  return sale;
+    // 3. Create items + reduce stock
+    for (const item of items) {
+      await tx.saleItem.create({
+        data: {
+          saleId: sale.id,
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        },
+      });
+
+      await tx.product.update({
+        where: { id: item.id },
+        data: {
+          stock: {
+            decrement: item.quantity,
+          },
+        },
+      });
+    }
+
+    return sale;
+  });
 }
