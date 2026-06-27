@@ -38,6 +38,18 @@ export async function getTodaySummary() {
 export async function closeCashUp(actualCash: number) {
   const summary = await getTodaySummary();
 
+  const existing = await prisma.cashSession.findFirst({
+    where: {
+      date: {
+        gte: new Date(new Date().setHours(0, 0, 0, 0)),
+      },
+    },
+  });
+
+  if (existing) {
+    throw new Error("Cash-up already completed for today");
+  }
+
   const expectedCash = summary.cashSales;
 
   const difference = actualCash - expectedCash;
@@ -54,4 +66,12 @@ export async function closeCashUp(actualCash: number) {
   });
 
   return session;
+}
+
+export async function getCashUpHistory() {
+  const sessions = await prisma.cashSession.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return sessions;
 }
