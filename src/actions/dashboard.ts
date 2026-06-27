@@ -4,77 +4,34 @@ export async function getDashboardData() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-
-  // =========================
-  // SALES TODAY
-  // =========================
-  const salesToday = await prisma.sale.findMany({
+  const sales = await prisma.sale.findMany({
     where: {
-      createdAt: {
-        gte: today,
-        lt: tomorrow,
-      },
+      createdAt: { gte: today },
     },
   });
 
-  const totalSales = salesToday.reduce(
-    (sum, s) => sum + s.total,
-    0
-  );
-
-  const cashSales = salesToday
+  const cashSales = sales
     .filter((s) => s.type === "CASH")
     .reduce((sum, s) => sum + s.total, 0);
 
-  const creditSales = salesToday
+  const creditSales = sales
     .filter((s) => s.type === "CREDIT")
     .reduce((sum, s) => sum + s.total, 0);
 
-  // =========================
-  // PRODUCTS
-  // =========================
   const productCount = await prisma.product.count();
 
   const lowStockCount = await prisma.product.count({
     where: {
-      stock: {
-        lte: 5,
-      },
+      stock: { lte: 5 },
     },
   });
 
-  // =========================
-  // CREDIT OWED (CORRECT MODEL)
-  // =========================
-  const creditDebt = await prisma.credit.findMany({
-    where: {
-      type: "DEBT",
-    },
+  const creditOwedAgg = await prisma.customer.aggregate({
+    _sum: { balance: true },
   });
 
-  const creditPayments = await prisma.credit.findMany({
-    where: {
-      type: "PAYMENT",
-    },
-  });
+  const creditOwed = creditOwedAgg._sum.balance ?? 0;
 
-  const totalDebt = creditDebt.reduce(
-    (sum, c) => sum + c.amount,
-    0
-  );
-
-  const totalPaid = creditPayments.reduce(
-    (sum, c) => sum + c.amount,
-    0
-  );
-
-  const creditOwed = totalDebt - totalPaid;
-
-  // =========================
-  // RECENT SALES
-  // =========================
   const recentSales = await prisma.sale.findMany({
     orderBy: { createdAt: "desc" },
     take: 5,
@@ -83,7 +40,7 @@ export async function getDashboardData() {
   return {
     cashSales,
     creditSales,
-    totalSales,
+    totalSales: cashSales + creditSales,
     productCount,
     lowStockCount,
     creditOwed,
