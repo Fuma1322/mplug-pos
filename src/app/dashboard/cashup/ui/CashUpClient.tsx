@@ -4,7 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { closeCashUp } from "@/actions/cashup";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 export default function CashUpClient({
   summary,
@@ -35,7 +34,7 @@ export default function CashUpClient({
       toast.success("Cash-up completed successfully");
 
       setActualCash("");
-    } catch (err) {
+    } catch {
       toast.error("Failed to close cash-up");
     } finally {
       setLoading(false);

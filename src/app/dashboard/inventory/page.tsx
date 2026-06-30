@@ -1,15 +1,26 @@
-import { prisma } from "@/lib/db";
+"use client";
+
+import { useEffect } from "react";
 import InventoryClient from "./ui/InventoryClient";
+import { tauri } from "@/lib/tauri";
+import { usePOSStore } from "../../../../store/usePOSStore";
+import type { Product } from "@/types/products";
 
-export default async function InventoryPage() {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export default function InventoryPage() {
+  const { products, setProducts, refreshProducts } = usePOSStore();
 
-  const serializedProducts = products.map((product) => ({
-    ...product,
-    createdAt: product.createdAt.toISOString(),
-  }));
+useEffect(() => {
+  refreshProducts();
+}, [refreshProducts]);
 
-  return <InventoryClient products={serializedProducts} />;
+  useEffect(() => {
+    (async () => {
+      const data = await tauri.getProducts();
+      setProducts(data as Product[]);
+    })();
+  }, [setProducts]);
+
+  return (
+    <InventoryClient />
+  );
 }

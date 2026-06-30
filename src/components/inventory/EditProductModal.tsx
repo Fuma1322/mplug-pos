@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
+import { tauri } from "@/lib/tauri";
 
 type Product = {
   id: string;
   name: string;
   price: number;
   stock: number;
-  minStock: number;
+  min_stock: number;
 };
 
 type Props = {
@@ -37,37 +38,40 @@ export default function EditProductModal({
   const [price, setPrice] = useState(0);
   const [stock, setStock] = useState(0);
   const [minStock, setMinStock] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (product) {
       setName(product.name);
       setPrice(product.price);
       setStock(product.stock);
-      setMinStock(product.minStock);
+      setMinStock(product.min_stock);
     }
   }, [product]);
 
   async function handleUpdate() {
-    try {
-      if (!product) return;
+    if (!product) return;
 
-      await fetch(`/api/products/${product.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          price,
-          stock,
-          minStock,
-        }),
-      });
+    try {
+      setLoading(true);
+
+      await tauri.updateProduct({
+      id: product.id,
+      name,
+      price,
+      stock,
+      min_stock: minStock,
+    });
 
       toast.success("Product updated successfully");
 
       onUpdated?.();
       onOpenChange(false);
     } catch (err) {
+      console.error(err);
       toast.error("Failed to update product");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -75,7 +79,6 @@ export default function EditProductModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl bg-white border border-gray-100 shadow-xl">
 
-        {/* HEADER */}
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-[#111111]">
             Edit Product
@@ -86,70 +89,45 @@ export default function EditProductModal({
           </p>
         </DialogHeader>
 
-        {/* FORM */}
         <div className="space-y-4 mt-4">
 
-          {/* NAME */}
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Product Name</label>
-            <input
-              className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm
-                         focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]
-                         transition"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Product name"
-            />
-          </div>
+          <input
+            className="w-full h-11 px-3 rounded-lg border border-gray-200 text-sm"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Product name"
+          />
 
-          {/* PRICE */}
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Price (M)</label>
-            <input
-              className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm
-                         focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]
-                         transition"
-              value={price}
-              type="number"
-              onChange={(e) => setPrice(Number(e.target.value))}
-              placeholder="Price"
-            />
-          </div>
+          <input
+            type="number"
+            className="w-full h-11 px-3 rounded-lg border border-gray-200 text-sm"
+            value={price}
+            onChange={(e) => setPrice(Number(e.target.value))}
+            placeholder="Price"
+          />
 
-          {/* STOCK */}
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Stock Quantity</label>
-            <input
-              className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm
-                         focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]
-                         transition"
-              value={stock}
-              type="number"
-              onChange={(e) => setStock(Number(e.target.value))}
-              placeholder="Stock"
-            />
-          </div>
+          <input
+            type="number"
+            className="w-full h-11 px-3 rounded-lg border border-gray-200 text-sm"
+            value={stock}
+            onChange={(e) => setStock(Number(e.target.value))}
+            placeholder="Stock"
+          />
 
-          {/* MIN STOCK */}
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Minimum Stock</label>
-            <input
-              className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm
-                         focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]
-                         transition"
-              value={minStock}
-              type="number"
-              onChange={(e) => setMinStock(Number(e.target.value))}
-              placeholder="Min Stock"
-            />
-          </div>
+          <input
+            type="number"
+            className="w-full h-11 px-3 rounded-lg border border-gray-200 text-sm"
+            value={minStock}
+            onChange={(e) => setMinStock(Number(e.target.value))}
+            placeholder="Min Stock"
+          />
 
-          {/* BUTTON */}
           <Button
             onClick={handleUpdate}
-            className="w-full h-11 rounded-lg bg-[#25D366] hover:bg-[#1faa55] text-white font-medium transition"
+            disabled={loading}
+            className="w-full h-11 rounded-lg bg-[#25D366] text-white font-medium"
           >
-            Save Changes
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
 
         </div>

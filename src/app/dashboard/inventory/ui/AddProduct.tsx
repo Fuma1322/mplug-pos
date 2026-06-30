@@ -2,8 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { usePOSStore } from "../../../../../store/usePOSStore";
 
 export default function AddProduct() {
+  const addProduct = usePOSStore((s) => s.addProduct);
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -15,23 +18,18 @@ export default function AddProduct() {
     try {
       setLoading(true);
 
-      await fetch("/api/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          price: Number(price),
-          stock: Number(stock),
-        }),
+      await addProduct({
+        name,
+        price: Number(price),
+        stock: Number(stock),
+        minStock: 0,
       });
 
       setName("");
       setPrice("");
       setStock("");
-
-      window.location.reload();
+    } catch (error) {
+      console.error("Error adding product:", error);
     } finally {
       setLoading(false);
     }
@@ -39,7 +37,6 @@ export default function AddProduct() {
 
   return (
     <div className="w-full md:w-auto">
-      {/* WRAPPER */}
       <div className="flex flex-col md:flex-row gap-2 md:items-center">
 
         {/* NAME */}

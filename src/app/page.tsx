@@ -15,7 +15,7 @@ export default function Home() {
           {/* BRAND */}
           <div className="space-y-2">
             <p className="text-[#25D366] font-semibold tracking-wide">
-              MaseruPlug POS
+              MPlug POS
             </p>
 
             <h1 className="text-4xl md:text-5xl font-bold text-[#111111] leading-tight">

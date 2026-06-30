@@ -1,30 +1,37 @@
-"use client"
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
-import { checkoutSale } from "@/actions/sales";
 import type { Product } from "@/types/products";
 import { Button } from "@/components/ui/button";
 import CreditCheckoutModal from "@/components/sales/CreditCheckoutModal";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { invoke } from "@tauri-apps/api/core";
+import { tauri } from "@/lib/tauri";
+
 
 export default function SalesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
   const [cashOpen, setCashOpen] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
-
   const [creditOpen, setCreditOpen] = useState(false);
 
   const cart = useCart();
 
   useEffect(() => {
-    fetch("/api/products/list")
-      .then((res) => res.json())
-      .then(setProducts);
-  }, []);
+  async function loadProducts() {
+    try {
+      const data = await tauri.getProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error("getProducts failed:", err);
+    }
+  }
+
+  loadProducts();
+}, []);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) =>
@@ -33,33 +40,50 @@ export default function SalesPage() {
   }, [products, search]);
 
   const change = useMemo(() => {
-  const received = Number(cashReceived || 0);
-  return received - cart.total();
-}, [cashReceived, cart.items]);
+    const received = Number(cashReceived || 0);
+    return received - cart.total();
+  }, [cashReceived, cart]);
 
   const cartCount = useMemo(() => {
     return cart.items.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart.items]);
 
-    async function checkout(type: "CASH" | "CREDIT") {
-      try {
-        setLoading(true);
+  async function handleCashSale() {
+    try {
+      // 1. Save sale
+      await invoke("create_sale", {
+        total: cart.total(),
+        saleType: "CASH",
+      });
 
-        if (type === "CREDIT") {
-          setCreditOpen(true);
-          return;
-        }
-
-        if (type === "CASH") {
-          setCashOpen(true);
-          return;
-        }
-      } catch (error) {
-        toast.error("Checkout failed");
-      } finally {
-        setLoading(false);
+      // 2. Reduce stock per item
+      for (const item of cart.items) {
+        await invoke("reduce_stock", {
+          productId: item.id,
+          qty: item.quantity,
+        });
       }
+
+      cart.clearCart();
+      setCashOpen(false);
+      setCashReceived("");
+
+      toast.success("Cash sale completed");
+    } catch (err) {
+      console.error(err);
+      toast.error("Cash sale failed");
     }
+  }
+
+  async function openCheckout(type: "CASH" | "CREDIT") {
+    try {
+      if (type === "CASH") setCashOpen(true);
+      if (type === "CREDIT") setCreditOpen(true);
+    } catch {
+      toast.error("Checkout failed");
+    }
+  }
+
   return (
     <div className="grid grid-cols-12 gap-4 p-6 h-screen bg-gray-50">
 
@@ -70,7 +94,6 @@ export default function SalesPage() {
           <h1 className="text-xl font-bold text-[#111111]">
             Point of Sale
           </h1>
-
           <p className="text-sm text-gray-500 mb-3">
             Select products to add to cart
           </p>
@@ -92,7 +115,7 @@ export default function SalesPage() {
               className="h-full flex flex-col items-start bg-white p-4 rounded-xl border hover:border-[#25D366]"
             >
               <p className="font-semibold">{p.name}</p>
-              <p className="text-[#25D366]">M{p.price}</p>
+              <p className="text-green-600">M{p.price}</p>
               <p className="text-xs text-gray-500">Stock: {p.stock}</p>
             </Button>
           ))}
@@ -111,14 +134,20 @@ export default function SalesPage() {
             <div key={item.id} className="border p-3 rounded-lg">
               <div className="flex justify-between">
                 <p>{item.name}</p>
-                <button onClick={() => cart.removeItem(item.id)}>✕</button>
+                <button className="text-red-500 font-bold" onClick={() => cart.removeItem(item.id)}>
+                  ✕
+                </button>
               </div>
 
               <div className="flex justify-between mt-2">
                 <div className="flex gap-2">
-                  <button onClick={() => cart.decreaseQty(item.id)}>-</button>
+                  <button onClick={() => cart.decreaseQty(item.id)}>
+                    -
+                  </button>
                   <span>{item.quantity}</span>
-                  <button onClick={() => cart.increaseQty(item.id)}>+</button>
+                  <button onClick={() => cart.increaseQty(item.id)}>
+                    +
+                  </button>
                 </div>
 
                 <p>M{item.price * item.quantity}</p>
@@ -131,14 +160,14 @@ export default function SalesPage() {
           <p className="font-bold">Total: M{cart.total()}</p>
 
           <button
-            onClick={() => checkout("CASH")}
-            className="w-full bg-[#25D366] text-white p-3 rounded-lg"
+            onClick={() => openCheckout("CASH")}
+            className="w-full bg-green-500 text-white p-3 rounded-lg"
           >
             CASH
           </button>
 
           <button
-            onClick={() => checkout("CREDIT")}
+            onClick={() => openCheckout("CREDIT")}
             className="w-full bg-black text-white p-3 rounded-lg"
           >
             CREDIT
@@ -155,38 +184,33 @@ export default function SalesPage() {
         onSuccess={() => cart.clearCart()}
       />
 
+      {/* CASH MODAL */}
       <Dialog open={cashOpen} onOpenChange={setCashOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl bg-white p-6">
+        <DialogContent className="sm:max-w-md bg-white p-6 rounded-2xl">
 
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              Cash Payment
-            </DialogTitle>
+            <DialogTitle>Cash Payment</DialogTitle>
           </DialogHeader>
 
           <div className="mt-4 space-y-3">
 
-            <div className="p-3 rounded-lg bg-gray-50 border">
+            <div className="p-3 border rounded-lg bg-gray-50">
               <p className="text-sm text-gray-500">Total</p>
               <p className="text-xl font-bold">M{cart.total()}</p>
             </div>
 
             <input
+              type="number"
               value={cashReceived}
               onChange={(e) => setCashReceived(e.target.value)}
-              placeholder="Money received (M)"
-              type="number"
+              placeholder="Cash received"
               className="w-full h-11 px-3 rounded-lg border focus:ring-2 focus:ring-[#25D366]/30 focus:border-[#25D366]"
             />
 
             {cashReceived && (
-              <div className="p-3 rounded-lg border bg-white">
+              <div className="p-3 border rounded-lg">
                 <p className="text-sm text-gray-500">Change</p>
-                <p
-                  className={`text-xl font-bold ${
-                    change >= 0 ? "text-[#25D366]" : "text-red-500"
-                  }`}
-                >
+                <p className={change >= 0 ? "text-green-600" : "text-red-500"}>
                   M{change.toFixed(2)}
                 </p>
               </div>
@@ -196,13 +220,11 @@ export default function SalesPage() {
               disabled={change < 0}
               onClick={async () => {
                 try {
-                  await checkoutSale(cart.items, "CASH");
+                  await handleCashSale();
 
                   cart.clearCart();
                   setCashOpen(false);
                   setCashReceived("");
-
-                  toast.success("Sale completed successfully");
                 } catch (err) {
                   toast.error("Failed to complete sale");
                 }
@@ -212,10 +234,11 @@ export default function SalesPage() {
               Complete Sale
             </button>
 
-          </div>
 
+          </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

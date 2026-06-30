@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -11,47 +10,58 @@ import EditProductModal from "@/components/inventory/EditProductModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { tauri } from "@/lib/tauri";
+import { usePOSStore } from "../../../../../store/usePOSStore";
 
 type Product = {
   id: string;
   name: string;
   price: number;
   stock: number;
-  minStock: number;
-  createdAt: string;
+  min_stock: number;
+  created_at: string;
 };
 
-export default function InventoryClient({
-  products,
-}: {
-  products: Product[];
+export default function InventoryClient( ) {
+  const { products, updateProduct, deleteProduct } = usePOSStore();
+
+  async function handleUpdate(updated: {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  min_stock: number;
 }) {
-  const router = useRouter();
+  try {
+    await tauri.updateProduct(updated);
+
+    updateProduct(updated as Product);
+    toast.success("Product updated");
+
+    setEditOpen(false);
+    setSelectedProduct(null);
+  } catch (err) {
+    toast.error("Failed to update product");
+  }
+}
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  async function deleteProduct(id: string) {
-    try {
-      await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-      });
+  async function handleDelete(id: string) {
+  try {
+    await tauri.deleteProduct(id);
 
-      toast.success("Product deleted");
-      router.refresh();
-    } catch (err) {
-      toast.error("Failed to delete product");
-    }
+    deleteProduct(id);
+    toast.success("Product deleted");
+  } catch {
+    toast.error("Failed to delete product");
   }
+}
 
   function handleEdit(product: Product) {
     setSelectedProduct(product);
     setEditOpen(true);
-  }
-
-  function closeEdit() {
-    setEditOpen(false);
-    setSelectedProduct(null);
   }
 
   return (
@@ -75,10 +85,10 @@ export default function InventoryClient({
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
         {products.map((product) => {
-          const lowStock = product.stock <= product.minStock;
+          const lowStock = product.stock <= product.min_stock;
 
           const stockRatio = Math.min(
-            product.stock / Math.max(product.minStock * 3, 1),
+            product.stock / Math.max(product.min_stock * 3, 1),
             1
           );
 
@@ -110,7 +120,7 @@ export default function InventoryClient({
                 </div>
 
                 <p className="text-xs text-gray-400">
-                  Added {new Date(product.createdAt).toLocaleDateString()}
+                  Added {new Date(product.created_at).toLocaleDateString()}
                 </p>
 
               </CardHeader>
@@ -180,7 +190,6 @@ export default function InventoryClient({
             setEditOpen(open);
             if (!open) setSelectedProduct(null);
           }}
-          onUpdated={() => router.refresh()}
         />
       )}
 

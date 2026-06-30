@@ -11,8 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button } from "@/components/ui/button";
-
 type Customer = {
   id: string;
   name: string;
@@ -107,7 +105,7 @@ export default function CreditCheckoutModal({
 
       onSuccess?.();
       router.refresh();
-    } catch (err) {
+    } catch {
       toast.error("Failed to complete credit sale");
     } finally {
       setLoading(false);

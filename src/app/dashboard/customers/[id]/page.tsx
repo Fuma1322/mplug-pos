@@ -1,5 +1,13 @@
-import { getCustomer } from "@/actions/credit";
+import { getCustomer, getCustomers } from "@/actions/credit";
 import PayDebt from "@/components/customers/PayDebt";
+
+export async function generateStaticParams() {
+  const customers = await getCustomers();
+
+  return customers.map((customer) => ({
+    id: customer.id,
+  }));
+}
 
 export default async function CustomerPage({
   params,

@@ -28,7 +28,7 @@ export default function PayDebt({
       setAmount("");
 
       window.location.reload();
-    } catch (err) {
+    } catch {
       toast.error("Payment failed");
     } finally {
       setLoading(false);

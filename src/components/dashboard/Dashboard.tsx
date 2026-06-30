@@ -41,7 +41,7 @@ export default async function DashboardPage() {
         <Card className="border-[#25D366]/20 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-sm">
-              Today's Sales
+              Today&apos;s Sales
             </CardTitle>
             <ShoppingCart className="h-5 w-5 text-[#25D366]" />
           </CardHeader>
